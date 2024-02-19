@@ -1,6 +1,7 @@
 package com.example.catsfactsapplication
 
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -22,8 +23,6 @@ import com.example.catsfactsapplication.utils.RetrofitInstance
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import retrofit2.HttpException
-import java.io.IOException
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,46 +45,37 @@ class MainActivity : ComponentActivity() {
                         scope.launch(Dispatchers.IO) {
                             val response = try {
                                 RetrofitInstance.api.getRandomFacts()
-                            } catch (e: HttpException) {
-                                Toast.makeText(
-                                    context,
-                                    "http error: ${e.message}",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                return@launch
-                            } catch (e: IOException) {
-                                Toast.makeText(
-                                    context,
-                                    "app error: ${e.message}",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                            } catch (e: Exception) {
+                                Log.e("Exception", e.message.toString())
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(
+                                        context,
+                                        "http error: ${e.message}",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
                                 return@launch
                             }
 
                             if (response.isSuccessful && !response.body()?.data.isNullOrEmpty()){
-//                                response.body()?.data?.forEach {
-//                                    val translatedFact = try {
-//                                        RetrofitInstance.translateApi.getTranslate(q = it.fact)
-//                                    } catch (e: HttpException) {
-//                                        Toast.makeText(
-//                                            context,
-//                                            "http error: ${e.message}",
-//                                            Toast.LENGTH_SHORT
-//                                        ).show()
-//                                        return@launch
-//                                    } catch (e: IOException) {
-//                                        Toast.makeText(
-//                                            context,
-//                                            "app error: ${e.message}",
-//                                            Toast.LENGTH_SHORT
-//                                        ).show()
-//                                        return@launch
-//                                    }
-//                                    if (translatedFact.isSuccessful && !translatedFact.body()?.responseData?.translatedText.isNullOrEmpty()){
-//                                        it.fact = translatedFact.body()?.responseData?.translatedText.toString()
-//                                    }
-//                                }
-
+                                response.body()?.data?.forEach {
+                                    val translatedFact = try {
+                                        RetrofitInstance.translateApi.getTranslate(q = it.fact)
+                                    } catch (e: Exception) {
+                                        withContext(Dispatchers.Main) {
+                                            Log.e("Exception", e.message.toString())
+                                            Toast.makeText(
+                                                context,
+                                                "http error: ${e.message}",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                        return@launch
+                                    }
+                                    if (translatedFact.isSuccessful && !translatedFact.body()?.responseData?.translatedText.isNullOrEmpty()){
+                                        it.fact = translatedFact.body()?.responseData?.translatedText.toString()
+                                    }
+                                }
                                 withContext(Dispatchers.Main){
                                     fact = response.body()!!
                                 }
